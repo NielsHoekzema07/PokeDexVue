@@ -1,0 +1,172 @@
+<script setup>
+//HomepageView.vue
+import PokemonCard from "@/components/PokemonCard.vue";
+import PokemonDetailSheet from "@/components/PokemonDetailSheet.vue";
+import { pokemonData } from "@/data/Pokemon.js";
+import { ref, computed, onMounted, inject } from "vue";
+
+const pokemons = ref([]);
+const pageSize = ref(10);
+const currentPage = ref(1);
+
+const searchQuery = inject("searchQuery");
+
+const selectedPokemon = ref(null);
+const sheetVisible = ref(false);
+
+onMounted(async () => {
+  pokemons.value = await pokemonData;
+});
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function likePokemon(pokemon) {
+  localStorage.setItem(`liked_${pokemon.name}`, JSON.stringify(pokemon));
+  alert(`${pokemon.name} is toegevoegd aan je favorieten!`);
+}
+
+const filteredPokemons = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return pokemons.value;
+  }
+  return pokemons.value.filter((pokemon) =>
+    pokemon.name.toLowerCase().includes(searchQuery.value.toLowerCase()),
+  );
+});
+
+const totalPages = computed(() => {
+  return Math.ceil(filteredPokemons.value.length / pageSize.value);
+});
+
+const paginatedPokemons = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
+  return filteredPokemons.value.slice(start, end);
+});
+
+function nextPage() {
+  if (currentPage.value < totalPages.value) currentPage.value++;
+  scrollToTop();
+}
+
+function prevPage() {
+  if (currentPage.value > 1) currentPage.value--;
+  scrollToTop();
+}
+
+function openSheet(pokemon) {
+  selectedPokemon.value = pokemon;
+  sheetVisible.value = true;
+  document.body.style.overflow = "hidden";
+}
+
+function closeSheet() {
+  sheetVisible.value = false;
+  setTimeout(() => {
+    selectedPokemon.value = null;
+  }, 300);
+  document.body.style.overflow = "";
+}
+</script>
+
+<template>
+  <!-- Pokemon List -->
+  <div class="pokemon-list">
+    <PokemonCard
+      v-for="pokemon in paginatedPokemons"
+      :key="pokemon.url"
+      :pokemon="pokemon"
+      @click="openSheet(pokemon)"
+    />
+  </div>
+
+  <!-- Empty State -->
+  <div v-if="filteredPokemons.length === 0" class="empty-state">
+    <span class="material-icons empty-icon">search_off</span>
+    <p class="mdc-typography--body1">
+      Geen Pokémon gevonden voor "{{ searchQuery }}"
+    </p>
+  </div>
+
+  <!-- Pagination -->
+  <div v-if="filteredPokemons.length > 0" class="pagination">
+    <button
+      class="mdc-button mdc-button--outlined"
+      @click="prevPage"
+      :disabled="currentPage === 1"
+    >
+      <span class="mdc-button__ripple"></span>
+      <span class="material-icons mdc-button__icon">chevron_left</span>
+      <span class="mdc-button__label">Vorige</span>
+    </button>
+
+    <span class="mdc-typography--body2 pagination__label">
+      {{ currentPage }} / {{ totalPages }}
+    </span>
+
+    <button
+      class="mdc-button mdc-button--outlined"
+      @click="nextPage"
+      :disabled="currentPage === totalPages"
+    >
+      <span class="mdc-button__ripple"></span>
+      <span class="mdc-button__label">Volgende</span>
+      <span class="material-icons mdc-button__icon mdc-button__icon--trailing"
+        >chevron_right</span
+      >
+    </button>
+  </div>
+
+  <!-- Detail Sheet (component) -->
+  <PokemonDetailSheet
+    :pokemon="selectedPokemon"
+    :visible="sheetVisible"
+    @close="closeSheet"
+    @like="likePokemon"
+  />
+</template>
+
+<style scoped>
+.pokemon-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px;
+  padding: 16px;
+  min-height: 200px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 64px 16px;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.38);
+}
+
+.empty-icon {
+  font-size: 48px;
+}
+
+.pagination {
+  position: fixed;
+  bottom: 0;
+  background-color: #ffffff;
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px 24px;
+}
+
+.pagination__label {
+  min-width: 72px;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.6);
+}
+</style>

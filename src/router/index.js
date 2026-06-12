@@ -9,7 +9,7 @@ const router = createRouter({
       path: '/', component: HomepageView
     },
     {
-      path: '/liked', component: LikedPokemonView
+      path: '/Favorieten', component: LikedPokemonView
     },
   ],
 })

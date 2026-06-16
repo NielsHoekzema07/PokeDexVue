@@ -14,12 +14,9 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["close", "like"]);
-
+const emit = defineEmits(["close", "like", "type-selected"]);
 const details = ref(null);
 const loading = ref(false);
-
-
 
 function getPokemonId(url) {
   const parts = url.replace(/\/$/, "").split("/");
@@ -61,7 +58,8 @@ watch(
     details.value = null;
     try {
       const res = await fetch(
-        `https://pokeapi.co/api/v2/pokemon/${newPokemon.name}`
+        `https://pokeapi.co/api/v2/pokemon/${newPokemon.name}`,
+        console.log("Fetching details for Pokémon:", newPokemon.name)
       );
       details.value = await res.json();
     } catch (e) {
@@ -69,7 +67,7 @@ watch(
     } finally {
       loading.value = false;
     }
-  }
+  },
 );
 </script>
 
@@ -109,7 +107,7 @@ watch(
         <p>Laden...</p>
       </div>
 
-      <div v-else-if="details" class="sheet__body">
+      <div v-else-if="details && pokemon" class="sheet__body">
         <!-- Afbeelding -->
         <div class="sheet__image-container">
           <img
@@ -127,6 +125,7 @@ watch(
               :key="t.type.name"
               class="type-chip"
               :style="{ backgroundColor: getTypeColor(t.type.name) }"
+              @click="emit('type-selected', t.type.name)"
             >
               {{ t.type.name }}
             </span>
@@ -138,12 +137,16 @@ watch(
           <div class="info-block">
             <span class="material-icons info-icon">straighten</span>
             <span class="info-label">Hoogte</span>
-            <span class="info-value">{{ (details.height / 10).toFixed(1) }} m</span>
+            <span class="info-value"
+              >{{ (details.height / 10).toFixed(1) }} m</span
+            >
           </div>
           <div class="info-block">
             <span class="material-icons info-icon">monitor_weight</span>
             <span class="info-label">Gewicht</span>
-            <span class="info-value">{{ (details.weight / 10).toFixed(1) }} kg</span>
+            <span class="info-value"
+              >{{ (details.weight / 10).toFixed(1) }} kg</span
+            >
           </div>
           <div class="info-block">
             <span class="material-icons info-icon">star</span>
@@ -177,7 +180,9 @@ watch(
               :key="stat.stat.name"
               class="stat-row"
             >
-              <span class="stat-name">{{ formatStatName(stat.stat.name) }}</span>
+              <span class="stat-name">{{
+                formatStatName(stat.stat.name)
+              }}</span>
               <span class="stat-value">{{ stat.base_stat }}</span>
               <div class="stat-bar-bg">
                 <div
@@ -252,8 +257,12 @@ watch(
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ─── Body ─────────────────────────────────────────────────────── */

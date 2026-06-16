@@ -1,0 +1,3 @@
+PokemonType effectiveness
+
+Installeerbaar maken.

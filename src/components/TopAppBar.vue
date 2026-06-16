@@ -40,15 +40,12 @@ function titleClick() {
           <div class="bar-default">
             <section
               class="mdc-top-app-bar__section mdc-top-app-bar__section--align-start"
-            >
-              <button
-                class="material-icons mdc-top-app-bar__navigation-icon mdc-icon-button"
-              >
-                menu
-              </button>
-              <span class="mdc-top-app-bar__title" @click="titleClick"
-                >Pokédex</span
-              >
+            >              
+              <RouterLink to="/" custom v-slot="{ navigate }">
+                <span class="mdc-top-app-bar__title" @click="navigate"
+                  >Pokédex</span
+                >
+              </RouterLink>
             </section>
 
             <section

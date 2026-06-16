@@ -5,10 +5,12 @@ const props = defineProps({
   totalPages: Number,
 });
 
-const emit = defineEmits(["pageChange"]);
+const emit = defineEmits(["pageChange", "pageSizeChange"]);
 
 const currentPage = ref(1);
 const inputValue = ref("1");
+const pageSize = ref(10);
+const pageSizeOptions = [5, 10, 20, 50];
 
 watch(
   () => props.totalPages,
@@ -23,11 +25,13 @@ function scrollToTop() {
 }
 
 function goToPage(page) {
-  const clamped = Math.min(Math.max(1, page), props.totalPages);
-  currentPage.value = clamped;
-  inputValue.value = String(clamped);
+  if (page < 1) page = 1;
+  if (page > props.totalPages) page = props.totalPages;
+
+  currentPage.value = page;
+  inputValue.value = String(page);
   scrollToTop();
-  emit("pageChange", clamped);
+  emit("pageChange", page);
 }
 
 function nextPage() {
@@ -38,17 +42,22 @@ function prevPage() {
   if (currentPage.value > 1) goToPage(currentPage.value - 1);
 }
 
-function onInputChange() {
+function onInput() {
   const parsed = parseInt(inputValue.value);
-  if (!isNaN(parsed)) {
+  if (!isNaN(parsed) && parsed >= 1 && parsed <= props.totalPages) {
     goToPage(parsed);
-  } else {
-    inputValue.value = String(currentPage.value);
   }
 }
 
-function onInputBlur() {
+function onBlur() {
   inputValue.value = String(currentPage.value);
+}
+
+function onPageSizeChange() {
+  currentPage.value = 1;
+  inputValue.value = "1";
+  emit("pageSizeChange", pageSize.value);
+  scrollToTop();
 }
 </script>
 
@@ -74,11 +83,13 @@ function onInputBlur() {
       <input
         class="mdc-text-field__input"
         type="number"
+        inputmode="numeric"
+        pattern="[0-9]*"
         :min="1"
         :max="totalPages"
         v-model="inputValue"
-        @change="onInputChange"
-        @blur="onInputBlur"
+        @input="onInput"
+        @blur="onBlur"
         aria-label="Paginanummer"
       />
     </label>
@@ -97,6 +108,24 @@ function onInputBlur() {
       <span class="mdc-button__label">Volgende</span>
       <span class="material-icons mdc-button__icon mdc-button__icon--trailing">chevron_right</span>
     </button>
+
+    <!-- Page size dropdown -->
+    <label class="mdc-text-field mdc-text-field--outlined mdc-text-field--no-label pagination__select">
+      <span class="mdc-notched-outline">
+        <span class="mdc-notched-outline__leading"></span>
+        <span class="mdc-notched-outline__trailing"></span>
+      </span>
+      <select
+        class="mdc-text-field__input"
+        v-model="pageSize"
+        @change="onPageSizeChange"
+        aria-label="Pokémon per pagina"
+      >
+        <option v-for="option in pageSizeOptions" :key="option" :value="option">
+          {{ option }}
+        </option>
+      </select>
+    </label>
   </div>
 </template>
 
@@ -111,26 +140,50 @@ function onInputBlur() {
   align-items: center;
   gap: 8px;
   padding: 8px 16px 24px;
+  bottom: env(safe-area-inset-bottom, 0);
 }
 
 .pagination__label {
   color: rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
 }
 
-/* Input veld sizing */
+@media (max-width: 480px) {
+  .mdc-button__label {
+    display: none;
+  }
+
+  .mdc-button {
+    min-width: 36px;
+    padding: 0 8px;
+  }
+}
+
 .pagination__input {
-  width: 72px;
+  width: 64px;
   height: 40px;
 }
 
-/* Verberg de nummer pijltjes (browser default) */
 .pagination__input input[type="number"]::-webkit-inner-spin-button,
 .pagination__input input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
 }
 
 .pagination__input input[type="number"] {
-  -moz-appearance: textfield;
+  text-align: center;
+  font-size: 16px;
+}
+
+.pagination__select {
+  width: 72px;
+  height: 40px;
+}
+
+.pagination__select select {
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 8px;
+  appearance: none;
   text-align: center;
 }
 </style>

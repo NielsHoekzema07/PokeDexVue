@@ -1,7 +1,38 @@
+<script setup>
+const props = defineProps({
+  pokemon: {
+    type: Object,
+    required: true,
+  },
+  liked: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+defineEmits(["like"]);
+
+const pokemonId = props.pokemon.url.split("/").at(-2);
+const pokemonSpriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`;
+</script>
+
 <template>
   <!-- Pokemon Card -->
   <div class="mdc-card mdc-card--outlined">
     <div class="mdc-card__primary-action">
+      <!-- Hartje -->
+      <button
+        class="like-btn mdc-icon-button"
+        @click.stop="$emit('like')"
+        :aria-label="
+          liked ? 'Verwijder uit favorieten' : 'Voeg toe aan favorieten'
+        "
+      >
+        <span class="material-icons like-icon" :class="{ liked: liked }">
+          {{ liked ? "favorite" : "favorite_border" }}
+        </span>
+      </button>
+
       <div class="mdc-card__media mdc-card__media--square">
         <img :src="pokemonSpriteUrl" :alt="pokemon.name" class="pokemon-img" />
       </div>
@@ -13,34 +44,52 @@
   </div>
 </template>
 
-<script>
-export default {
-  props: {
-    pokemon: {
-      type: Object,
-      required: true,
-    },
-  },
-  computed: {
-    pokemonId() {
-      const urlParts = this.pokemon.url.split("/");
-      return urlParts[urlParts.length - 2];
-    },
-    pokemonSpriteUrl() {
-      return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${this.pokemonId}.png`;
-    },
-  },
-};
-</script>
-
 <style scoped>
 .mdc-card {
   border-radius: 4px;
   overflow: hidden;
+  position: relative;
 }
 
 .mdc-card__primary-action {
   padding: 0;
+}
+
+/* Hartje rechts bovenin */
+.like-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.like-btn:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+.like-icon {
+  font-size: 22px;
+  color: rgba(0, 0, 0, 0.3);
+  transition:
+    color 0.2s,
+    transform 0.15s;
+}
+
+.like-icon.liked {
+  color: #e53935;
+}
+
+.like-btn:active .like-icon {
+  transform: scale(1.25);
 }
 
 .mdc-card__media {

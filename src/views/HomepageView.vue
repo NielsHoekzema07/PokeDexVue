@@ -124,6 +124,7 @@ function closeTypeSheet() {
   <PokemonDetailSheet
     :pokemon="selectedPokemon"
     :visible="sheetVisible"
+    :liked="selectedPokemon ? isLiked(selectedPokemon) : false"
     @close="closeSheet"
     @like="likePokemon"
     @type-selected="openTypeSheet"

@@ -12,6 +12,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  liked: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(["close", "like", "type-selected"]);
@@ -59,7 +63,7 @@ watch(
     try {
       const res = await fetch(
         `https://pokeapi.co/api/v2/pokemon/${newPokemon.name}`,
-        console.log("Fetching details for Pokémon:", newPokemon.name)
+        console.log("Fetching details for Pokémon:", newPokemon.name),
       );
       details.value = await res.json();
     } catch (e) {
@@ -203,11 +207,14 @@ watch(
     <footer class="sheet__bottom-bar">
       <button
         class="mdc-button mdc-button--unelevated like-btn"
+        :class="{ 'like-btn--liked': liked }"
         @click="emit('like', pokemon)"
       >
         <span class="mdc-button__ripple"></span>
-        <span class="material-icons mdc-button__icon">favorite_border</span>
-        <span class="mdc-button__label">Like</span>
+        <span class="material-icons mdc-button__icon">{{
+          liked ? "favorite" : "favorite_border"
+        }}</span>
+        <span class="mdc-button__label">{{ liked ? "Geliked" : "Like" }}</span>
       </button>
     </footer>
   </section>
@@ -422,5 +429,8 @@ watch(
   background-color: white !important;
   color: #1565c0 !important;
   min-width: 160px;
+}
+.like-btn--liked {
+  color: #e53935 !important;
 }
 </style>

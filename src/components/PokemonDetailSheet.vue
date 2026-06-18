@@ -55,19 +55,18 @@ function getStatColor(value) {
 }
 
 watch(
-  () => props.pokemon,
-  async (newPokemon) => {
-    if (!newPokemon) return;
+  () => [props.pokemon, props.visible],
+  async ([newPokemon, visible]) => {
+    if (!newPokemon || !visible) return;
+
     loading.value = true;
     details.value = null;
+    console.log("Fetching details for", newPokemon.name);
     try {
       const res = await fetch(
         `https://pokeapi.co/api/v2/pokemon/${newPokemon.name}`,
-        console.log("Fetching details for Pokémon:", newPokemon.name),
       );
       details.value = await res.json();
-    } catch (e) {
-      console.error("Fout bij ophalen Pokémon details:", e);
     } finally {
       loading.value = false;
     }

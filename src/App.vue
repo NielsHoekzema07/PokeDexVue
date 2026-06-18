@@ -3,6 +3,7 @@ import { ref, provide } from 'vue'
 import { RouterView } from 'vue-router'
 import TopAppBar from './components/TopAppBar.vue'
 import TabList from './components/TabList.vue'
+import InstallPrompt from './components/InstallPrompt.vue'
 
 const searchOpen = ref(false)
 const searchQuery = ref('')
@@ -17,8 +18,9 @@ provide('searchQuery', searchQuery)
     <TopAppBar />
     <TabList />
   </header>
-
+  
   <RouterView />
+  <InstallPrompt />
 </template>
 
 <style scoped></style>

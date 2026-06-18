@@ -118,6 +118,7 @@ function unlikePokemon(pokemon) {
   <PokemonDetailSheet
     :pokemon="selectedPokemon"
     :visible="sheetVisible"
+    :liked="true"
     @close="closeSheet"
     @like="unlikePokemon"
   />

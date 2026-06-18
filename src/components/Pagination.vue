@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, onMounted, onBeforeUnmount } from "vue";
 
 const props = defineProps({
   totalPages: Number,
@@ -11,13 +11,15 @@ const currentPage = ref(1);
 const inputValue = ref("1");
 const pageSize = ref(10);
 const pageSizeOptions = [5, 10, 20, 50];
+const dropdownOpen = ref(false);
+const dropdownRef = ref(null);
 
 watch(
   () => props.totalPages,
   () => {
     currentPage.value = 1;
     inputValue.value = "1";
-  }
+  },
 );
 
 function scrollToTop() {
@@ -25,21 +27,11 @@ function scrollToTop() {
 }
 
 function goToPage(page) {
-  if (page < 1) page = 1;
-  if (page > props.totalPages) page = props.totalPages;
-
+  page = Math.max(1, Math.min(page, props.totalPages));
   currentPage.value = page;
   inputValue.value = String(page);
   scrollToTop();
   emit("pageChange", page);
-}
-
-function nextPage() {
-  if (currentPage.value < props.totalPages) goToPage(currentPage.value + 1);
-}
-
-function prevPage() {
-  if (currentPage.value > 1) goToPage(currentPage.value - 1);
 }
 
 function onInput() {
@@ -53,79 +45,91 @@ function onBlur() {
   inputValue.value = String(currentPage.value);
 }
 
-function onPageSizeChange() {
+function selectPageSize(option) {
+  pageSize.value = option;
+  dropdownOpen.value = false;
   currentPage.value = 1;
   inputValue.value = "1";
-  emit("pageSizeChange", pageSize.value);
+  emit("pageSizeChange", option);
   scrollToTop();
 }
+
+function handleClickOutside(e) {
+  if (dropdownRef.value && !dropdownRef.value.contains(e.target)) {
+    dropdownOpen.value = false;
+  }
+}
+
+onMounted(() => document.addEventListener("click", handleClickOutside));
+onBeforeUnmount(() => document.removeEventListener("click", handleClickOutside));
 </script>
 
 <template>
   <div v-if="totalPages > 0" class="pagination">
-    <!-- Vorige knop -->
     <button
-      class="mdc-button mdc-button--outlined"
-      @click="prevPage"
+      class="pagination__btn"
+      @click="goToPage(currentPage - 1)"
       :disabled="currentPage === 1"
+      aria-label="Vorige pagina"
     >
-      <span class="mdc-button__ripple"></span>
-      <span class="material-icons mdc-button__icon">chevron_left</span>
-      <span class="mdc-button__label">Vorige</span>
+      <span class="material-icons">chevron_left</span>
     </button>
 
-    <!-- Pagina input -->
-    <label class="mdc-text-field mdc-text-field--outlined mdc-text-field--no-label pagination__input">
-      <span class="mdc-notched-outline">
-        <span class="mdc-notched-outline__leading"></span>
-        <span class="mdc-notched-outline__trailing"></span>
-      </span>
-      <input
-        class="mdc-text-field__input"
-        type="number"
-        inputmode="numeric"
-        pattern="[0-9]*"
-        :min="1"
-        :max="totalPages"
-        v-model="inputValue"
-        @input="onInput"
-        @blur="onBlur"
-        aria-label="Paginanummer"
-      />
-    </label>
+    <input
+      class="pagination__input"
+      type="number"
+      inputmode="numeric"
+      :min="1"
+      :max="totalPages"
+      v-model="inputValue"
+      @input="onInput"
+      @blur="onBlur"
+      aria-label="Paginanummer"
+    />
 
-    <span class="mdc-typography--body2 pagination__label">
-      / {{ totalPages }}
-    </span>
+    <span class="pagination__label">/ {{ totalPages }}</span>
 
-    <!-- Volgende knop -->
     <button
-      class="mdc-button mdc-button--outlined"
-      @click="nextPage"
+      class="pagination__btn"
+      @click="goToPage(currentPage + 1)"
       :disabled="currentPage === totalPages"
+      aria-label="Volgende pagina"
     >
-      <span class="mdc-button__ripple"></span>
-      <span class="mdc-button__label">Volgende</span>
-      <span class="material-icons mdc-button__icon mdc-button__icon--trailing">chevron_right</span>
+      <span class="material-icons">chevron_right</span>
     </button>
 
-    <!-- Page size dropdown -->
-    <label class="mdc-text-field mdc-text-field--outlined mdc-text-field--no-label pagination__select">
-      <span class="mdc-notched-outline">
-        <span class="mdc-notched-outline__leading"></span>
-        <span class="mdc-notched-outline__trailing"></span>
-      </span>
-      <select
-        class="mdc-text-field__input"
-        v-model="pageSize"
-        @change="onPageSizeChange"
-        aria-label="Pokémon per pagina"
+    <span class="pagination__label pagination__label--hide-sm">Per pagina</span>
+
+    <div class="pagination__select-wrap" ref="dropdownRef">
+      <button
+        class="pagination__select-btn"
+        @click="dropdownOpen = !dropdownOpen"
+        :aria-expanded="dropdownOpen"
+        aria-label="Rijen per pagina"
       >
-        <option v-for="option in pageSizeOptions" :key="option" :value="option">
+        {{ pageSize }}
+        <span class="material-icons">{{ dropdownOpen ? 'expand_less' : 'expand_more' }}</span>
+      </button>
+
+      <ul
+        v-if="dropdownOpen"
+        class="pagination__menu"
+        role="listbox"
+        aria-label="Per pagina opties"
+      >
+        <li
+          v-for="option in pageSizeOptions"
+          :key="option"
+          class="pagination__menu-item"
+          :class="{ 'pagination__menu-item--active': option === pageSize }"
+          role="option"
+          :aria-selected="option === pageSize"
+          @click="selectPageSize(option)"
+        >
           {{ option }}
-        </option>
-      </select>
-    </label>
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
@@ -133,57 +137,129 @@ function onPageSizeChange() {
 .pagination {
   position: fixed;
   bottom: 0;
-  background-color: #ffffff;
+  left: 0;
+  right: 0;
+  background: #fff;
   display: flex;
-  width: 100%;
   justify-content: center;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px 24px;
-  bottom: env(safe-area-inset-bottom, 0);
+  gap: 4px;
+  padding: 8px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.1);
+  z-index: 4;
 }
 
-.pagination__label {
-  color: rgba(0, 0, 0, 0.6);
-  white-space: nowrap;
+.pagination__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.7);
+  transition: background 0.15s;
 }
 
-@media (max-width: 480px) {
-  .mdc-button__label {
-    display: none;
-  }
+.pagination__btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.06);
+}
 
-  .mdc-button {
-    min-width: 36px;
-    padding: 0 8px;
-  }
+.pagination__btn:disabled {
+  color: rgba(0, 0, 0, 0.26);
+  cursor: default;
 }
 
 .pagination__input {
-  width: 64px;
-  height: 40px;
+  width: 48px;
+  height: 36px;
+  text-align: center;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  padding: 0;
+  outline: none;
 }
 
-.pagination__input input[type="number"]::-webkit-inner-spin-button,
-.pagination__input input[type="number"]::-webkit-outer-spin-button {
+.pagination__input:focus {
+  border-color: #6200ee;
+}
+
+.pagination__input::-webkit-inner-spin-button,
+.pagination__input::-webkit-outer-spin-button {
   -webkit-appearance: none;
 }
 
-.pagination__input input[type="number"] {
-  text-align: center;
-  font-size: 16px;
+.pagination__label {
+  font-size: 0.875rem;
+  color: rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  margin: 0 2px;
 }
 
-.pagination__select {
-  width: 72px;
-  height: 40px;
+.pagination__select-wrap {
+  position: relative;
 }
 
-.pagination__select select {
-  font-size: 16px;
-  cursor: pointer;
+.pagination__select-btn {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 36px;
   padding: 0 8px;
-  appearance: none;
-  text-align: center;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  background: transparent;
+  font-size: 0.875rem;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.87);
+  transition: border-color 0.15s;
+}
+
+.pagination__select-btn:hover {
+  border-color: rgba(0, 0, 0, 0.6);
+}
+
+.pagination__menu {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  min-width: 100%;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  z-index: 10;
+}
+
+.pagination__menu-item {
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.pagination__menu-item:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.pagination__menu-item--active {
+  color: #6200ee;
+  font-weight: 500;
+}
+
+@media (max-width: 360px) {
+  .pagination__label--hide-sm {
+    display: none;
+  }
+
+  .pagination {
+    gap: 2px;
+  }
 }
 </style>

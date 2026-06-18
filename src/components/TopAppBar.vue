@@ -57,12 +57,7 @@ function titleClick() {
                 aria-label="Zoeken openen"
               >
                 search
-              </button>
-              <button
-                class="material-icons mdc-top-app-bar__action-item mdc-icon-button"
-              >
-                more_vert
-              </button>
+              </button>              
             </section>
           </div>
         </template>
